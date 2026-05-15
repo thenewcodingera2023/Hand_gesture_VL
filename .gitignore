@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+build/
+dist/
+.eggs/
+pip-wheel-metadata/
+
+# Test / typecheck / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code local state
+.claude/
+tasks/
+documentation/
+
+
+# ---- Project-specific ----
+
+# Datasets and pipeline outputs (reproducible from src/ + HaGRIDv2 download)
+data/hagrid_raw/
+data/processed/
+data/splits/
+runs/
+evaluation/
+
+# Model weights / checkpoints (large; reproducible or downloadable)
+*.pt
+*.pth
+*.onnx
+*.joblib
+*.pkl
+*.h5
+*.task
+
+# Logs
+*.log
+
+# Git
+.gitignore
+.gitignore_backup
+CLAUDE.md

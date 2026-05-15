@@ -1,0 +1,3 @@
+[submodule "hagrid_repo"]
+	path = hagrid_repo
+	url = https://github.com/hukenovs/hagrid.git

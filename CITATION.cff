@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Hand Gesture Recognition (MV Calculus)"
+abstract: >
+  A 28-class hand gesture classifier built on MediaPipe hand landmarks,
+  engineered into a 279-dimensional feature vector, and classified by a
+  3-hidden-layer PyTorch MLP (R^279 -> R^28). The system runs in real time
+  on a laptop webcam and doubles as a teaching artefact: every step of
+  training is a concrete instance of multivariable calculus (gradient,
+  Jacobian, chain rule, level sets).
+authors:
+  - family-names: "Tran"
+    given-names: "Harry"
+version: "1.0.0"
+date-released: "2026-05-14"
+license: "MIT"
+repository-code: "https://github.com/thenewcodingera2023/Hand_gesture_VL"
+keywords:
+  - hand gesture recognition
+  - mediapipe
+  - pytorch
+  - mlp
+  - multivariable calculus
+  - real-time inference
+  - hagrid
+  - computer vision
+  - machine learning
+  - teaching artefact
+references:
+  - type: software
+    title: "HaGRIDv2 — Hand Gesture Recognition Image Dataset v2"
+    authors:
+      - name: "Kapitanov et al."
+    url: "https://github.com/hukenovs/hagrid"
+  - type: software
+    title: "MediaPipe Hand Landmarker"
+    authors:
+      - name: "Google LLC"
+    url: "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker"
