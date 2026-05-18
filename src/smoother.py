@@ -26,6 +26,8 @@ from typing import Optional
 
 import numpy as np
 
+from src.models.mlp import NUM_CLASSES
+
 
 class Smoother:
     def __init__(
@@ -33,7 +35,7 @@ class Smoother:
         window: int = 7,
         threshold: float = 0.75,
         no_hand_clear_frames: int = 5,
-        num_classes: int = 28,
+        num_classes: int = NUM_CLASSES,
     ) -> None:
         if window < 1:
             raise ValueError(f"window must be >= 1; got {window}")

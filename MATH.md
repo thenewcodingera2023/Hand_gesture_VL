@@ -34,13 +34,13 @@ The test set projected onto its first two principal components (PC1, PC2) is in 
 The classifier is a single composed function
 
 ```
-f  :  R^279  ->  R^28,           f  =  f_4  o  f_3  o  f_2  o  f_1
+f  :  R^279  ->  R^26,           f  =  f_4  o  f_3  o  f_2  o  f_1
 ```
 
 with intermediate dimensions
 
 ```
-R^279  --f_1-->  R^256  --f_2-->  R^128  --f_3-->  R^64  --f_4-->  R^28
+R^279  --f_1-->  R^256  --f_2-->  R^128  --f_3-->  R^64  --f_4-->  R^26
 ```
 
 Each `f_l` (`l = 1, 2, 3`) is an affine map followed by BatchNorm and ReLU:
@@ -61,7 +61,7 @@ This is exactly what `src/models/mlp.py:GestureMLP.forward` does. The matching c
 INPUT_DIM = 279
 HIDDEN_DIMS = (256, 128, 64)
 DROPOUTS    = (0.3, 0.3, 0.2)
-NUM_CLASSES = 28
+NUM_CLASSES = 26
 ```
 
 Three caveats worth stating:
@@ -80,7 +80,7 @@ Stack every weight, bias, and BatchNorm parameter into a single vector `θ ∈ R
 P = (279·256 + 256) + 2·256                      # Linear 1 + BN 1
   + (256·128 + 128) + 2·128                      # Linear 2 + BN 2
   + (128· 64 +  64) + 2· 64                      # Linear 3 + BN 3
-  + ( 64· 28 +  28)                              # Linear 4
+  + ( 64· 26 +  26)                              # Linear 4
   ≈ 1.07 · 10^5  parameters.
 ```
 
@@ -201,9 +201,9 @@ The four Jacobian shapes in this network:
 | 1 | 256 × 279 | `R^279 → R^256` |
 | 2 | 128 × 256 | `R^256 → R^128` |
 | 3 | 64 × 128 | `R^128 → R^64` |
-| 4 | 28 × 64 | `R^64 → R^28` |
+| 4 | 26 × 64 | `R^64 → R^26` |
 
-(These come straight from `HIDDEN_DIMS = (256, 128, 64)` and `NUM_CLASSES = 28` in `src/models/mlp.py`.)
+(These come straight from `HIDDEN_DIMS = (256, 128, 64)` and `NUM_CLASSES = 26` in `src/models/mlp.py`.)
 
 The full Jacobian of `f_l` (including BatchNorm and ReLU) is
 
@@ -230,4 +230,4 @@ The loss-surface slice in `loss_surface_slice.png` is a 2D slice of an `R^P`-dim
 
 ## Summary
 
-The classifier is a single function `f : R^279 → R^28`. Training minimises a scalar function `L : R^P → R`. The gradient of `L` with respect to each parameter is obtained by the multivariable chain rule applied along the computation graph; we have verified by direct numerical comparison that the manual chain-rule formula matches PyTorch's `loss.backward()` to ~10 significant digits on real data. The weight matrices are the Jacobians of the affine maps. The training trajectory is a discrete descent on a level-set-shaped loss surface in `R^P`. Multivariable calculus is not a metaphor for what this network does; it is the algorithm.
+The classifier is a single function `f : R^279 → R^26`. Training minimises a scalar function `L : R^P → R`. The gradient of `L` with respect to each parameter is obtained by the multivariable chain rule applied along the computation graph; we have verified by direct numerical comparison that the manual chain-rule formula matches PyTorch's `loss.backward()` to ~10 significant digits on real data. The weight matrices are the Jacobians of the affine maps. The training trajectory is a discrete descent on a level-set-shaped loss surface in `R^P`. Multivariable calculus is not a metaphor for what this network does; it is the algorithm.

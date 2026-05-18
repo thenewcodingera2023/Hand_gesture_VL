@@ -1,8 +1,9 @@
 """Unit tests for src/models/baseline.py — Stage 3 baseline classifiers.
 
-Tests run on a small synthetic 28-class dataset (sklearn.datasets.make_classification)
-so they finish in seconds. They do NOT load the real data/splits/*.npz files
-(those are validated by the CLI gate at training time).
+Tests run on a small synthetic dataset with bl.EXPECTED_NUM_CLASSES classes
+(sklearn.datasets.make_classification) so they finish in seconds. They do NOT
+load the real data/splits/*.npz files (those are validated by the CLI gate at
+training time).
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ LABELS_PATH = REPO_ROOT / "data" / "labels.json"
 
 @pytest.fixture(scope="module")
 def synthetic_data():
-    """Tiny 28-class, 279-dim dataset that fits LR/SVM in <2 s."""
+    """Tiny dataset matching bl.EXPECTED_NUM_CLASSES x 279-dim, fits LR/SVM in <2 s."""
     X, y = make_classification(
         n_samples=560,
         n_features=bl.EXPECTED_FEATURE_DIM,
@@ -93,7 +94,7 @@ def test_validate_split_schema_rejects_nan(valid_arrays):
 def test_validate_split_schema_rejects_bad_labels(valid_arrays):
     X, y = valid_arrays
     y_bad = y.copy()
-    y_bad[0] = 28
+    y_bad[0] = bl.EXPECTED_NUM_CLASSES
     with pytest.raises(ValueError, match="label IDs"):
         bl.validate_split_schema(X_bad := X, y_bad)
     y_neg = y.copy()
@@ -114,8 +115,8 @@ def test_validate_split_schema_rejects_wrong_dtype(valid_arrays):
         bl.validate_split_schema(X.astype(np.float64), y)
 
 
-def test_load_label_ids_returns_0_to_27():
-    assert bl.load_label_ids(LABELS_PATH) == set(range(28))
+def test_load_label_ids_returns_dense_range():
+    assert bl.load_label_ids(LABELS_PATH) == set(range(bl.EXPECTED_NUM_CLASSES))
 
 
 def test_load_split_rejects_missing_x_or_y(tmp_path):
@@ -262,12 +263,15 @@ def test_evaluate_classifier_returns_metrics_in_range(synthetic_data):
     assert metrics["predict_seconds"] >= 0.0
 
 
-def test_merge_labels_collapses_dual_labels():
+def test_merge_labels_is_identity_in_v26_schema():
+    """After the 26-class schema fix LABEL_EQUIVALENCE is empty; _merge_labels
+    must be the identity. Kept for log-column stability — see baseline.py."""
     import numpy as np
 
-    y = np.array([8, 11, 9, 14, 0, 27], dtype=np.int32)
+    y = np.array([8, 9, 0, 25], dtype=np.int32)
     merged = bl._merge_labels(y)
-    assert merged.tolist() == [8, 8, 9, 9, 0, 27]
+    assert merged.tolist() == y.tolist()
+    assert bl.LABEL_EQUIVALENCE == {}
 
 
 # ---------------------------------------------------------------------------

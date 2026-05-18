@@ -98,7 +98,8 @@ def test_finite_features(split_arrays):
 
 def test_label_ids_valid(split_arrays, labels):
     valid = set(labels.values())
-    assert valid == set(range(28))
+    from src.models.mlp import NUM_CLASSES
+    assert valid == set(range(NUM_CLASSES))
     for name, arrs in split_arrays.items():
         present = set(int(v) for v in np.unique(arrs["y"]))
         assert present.issubset(valid), f"{name}: invalid label IDs {present - valid}"

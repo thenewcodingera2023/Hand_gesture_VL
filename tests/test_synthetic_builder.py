@@ -32,9 +32,12 @@ def fake_pool(label_seed: int, n: int = 20) -> np.ndarray:
 
 
 def make_pools() -> dict[str, np.ndarray]:
+    # After the 26-class collision fix, count_2 / count_5 are no longer pool
+    # names — count_2 is just `peace` and count_5 is just `open_palm`. The
+    # synthetic builder draws from the `peace` pool for count_7/12/16.
     return {
         lbl: fake_pool(i + 1, n=20)
-        for i, lbl in enumerate(("open_palm", "count_1", "count_2", "count_3", "count_4"))
+        for i, lbl in enumerate(("open_palm", "count_1", "peace", "count_3", "count_4"))
     }
 
 

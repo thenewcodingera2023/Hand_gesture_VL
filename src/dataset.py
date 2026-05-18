@@ -38,7 +38,11 @@ from src.preprocessor import PER_HAND_DIM, TWO_HAND_DIM
 DEFAULT_SEED = 20260514
 SPLIT_FRACTIONS = (0.80, 0.10, 0.10)
 OVERSAMPLE_TARGET = 5000
-OVERSAMPLE_CLASS_IDS = tuple(range(15, 28))  # count_6..count_18 (13 classes)
+# Two-hand counts that the synthetic builder produces. Their integer IDs are
+# resolved from data/labels.json at runtime (see _resolve_oversample_class_ids)
+# so the schema is the single source of truth — a previous tuple(range(15, 28))
+# silently broke after the 28→26-class label-collision fix.
+OVERSAMPLE_CLASS_NAMES: tuple[str, ...] = tuple(f"count_{i}" for i in range(6, 19))
 AUG_SIGMA_DEFAULT = 0.01
 
 # Per-hand feature layout (see src/preprocessor.py):
@@ -136,6 +140,27 @@ def load_synthetic(path: Path = SYNTH_PATH_DEFAULT) -> dict:
 def load_labels(path: Path = LABELS_JSON_DEFAULT) -> dict[str, int]:
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _resolve_oversample_class_ids(
+    names: tuple[str, ...] = OVERSAMPLE_CLASS_NAMES,
+    labels_path: Path = LABELS_JSON_DEFAULT,
+) -> tuple[int, ...]:
+    """Resolve the integer ids of the count classes we oversample from labels.json."""
+    label_map = load_labels(labels_path)
+    missing = [n for n in names if n not in label_map]
+    if missing:
+        raise RuntimeError(
+            f"oversample class names missing from {labels_path}: {missing}"
+        )
+    return tuple(int(label_map[n]) for n in names)
+
+
+def __getattr__(name: str):
+    """Lazy module-level attribute access for OVERSAMPLE_CLASS_IDS."""
+    if name == "OVERSAMPLE_CLASS_IDS":
+        return _resolve_oversample_class_ids()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -471,10 +496,12 @@ def build_splits(
     out_dir: Path = SPLITS_DIR_DEFAULT,
     seed: int = DEFAULT_SEED,
     oversample_target: int = OVERSAMPLE_TARGET,
-    oversample_class_ids: tuple[int, ...] = OVERSAMPLE_CLASS_IDS,
+    oversample_class_ids: tuple[int, ...] | None = None,
     aug_sigma: float = AUG_SIGMA_DEFAULT,
 ) -> dict:
     """End-to-end Stage 2 builder. Writes train/val/test.npz to `out_dir`."""
+    if oversample_class_ids is None:
+        oversample_class_ids = _resolve_oversample_class_ids()
     print(f"[stage2] seed={seed}, target_per_count={oversample_target}, sigma={aug_sigma}")
     singles = load_singles(singles_path)
     synth = load_synthetic(synth_path)
@@ -613,7 +640,7 @@ def _post_build_assertions(out_dir: Path, summary: dict) -> None:
     # Train oversampling target met for count classes.
     z_train = np.load(out_dir / "train.npz", allow_pickle=True)
     y_train = z_train["y"]
-    for cid in OVERSAMPLE_CLASS_IDS:
+    for cid in _resolve_oversample_class_ids():
         n_cid = int(np.sum(y_train == cid))
         if n_cid < OVERSAMPLE_TARGET:
             print(f"WARNING: train class {cid} has {n_cid} rows (< {OVERSAMPLE_TARGET})")

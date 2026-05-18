@@ -3,9 +3,9 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "Hand Gesture Recognition (MV Calculus)"
 abstract: >
-  A 28-class hand gesture classifier built on MediaPipe hand landmarks,
+  A 26-class hand gesture classifier built on MediaPipe hand landmarks,
   engineered into a 279-dimensional feature vector, and classified by a
-  3-hidden-layer PyTorch MLP (R^279 -> R^28). The system runs in real time
+  3-hidden-layer PyTorch MLP (R^279 -> R^26). The system runs in real time
   on a laptop webcam and doubles as a teaching artefact: every step of
   training is a concrete instance of multivariable calculus (gradient,
   Jacobian, chain rule, level sets).

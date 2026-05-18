@@ -10,11 +10,10 @@ and emits a scorecard under ``runs/evaluation/``:
     - predictions.csv
     - latency.csv
 
-Reports raw + merged metrics. The Stage 6 acceptance gate is on
-``merged_accuracy >= 0.90`` and ``macro_f1 >= 0.88`` — raw accuracy is
-structurally bounded near 0.82 by HaGRID's dual-labelling of
-``peace == count_2`` and ``open_palm == count_5`` (see
-``src.models.baseline.LABEL_EQUIVALENCE``).
+Reports raw + merged metrics. After the 26-class schema correction (see
+``tasks/peace_count2_collision_fix.md``) ``LABEL_EQUIVALENCE`` is empty and
+``merged_accuracy == accuracy``. The Stage 6 acceptance gate is on
+``merged_accuracy >= 0.90`` and ``macro_f1 >= 0.88``.
 
 Authoritative spec:
     - tasks/gesture_recognition_plan_v2.md §6.4
@@ -65,7 +64,7 @@ from src.models.baseline import (
     load_split,
     validate_split_schema,
 )
-from src.models.mlp import INPUT_DIM, NUM_CLASSES, GestureMLP
+from src.models.mlp import INPUT_DIM, NUM_CLASSES, GestureMLP, assert_labels_consistent
 from src.train import DEFAULT_SEED, pick_device, set_global_seeds
 
 # ---------------------------------------------------------------------------
@@ -718,6 +717,7 @@ def run_evaluation(
 ) -> dict:
     """Full Stage 6 evaluation pipeline. Returns the metrics payload."""
     set_global_seeds(int(seed))
+    assert_labels_consistent(labels_path)
     dev = pick_device(device)
     print(f"[evaluate] device={dev}", flush=True)
 
@@ -814,10 +814,9 @@ def run_evaluation(
             f"classes with support < 10: {low_support} "
             f"(synthetic two-hand counts; per-class metrics are noisy)"
         )
-    warnings_list.append(
-        "raw accuracy is bounded by HaGRID LABEL_EQUIVALENCE "
-        "(peace==count_2, open_palm==count_5); gate is on merged_accuracy"
-    )
+    # In the 26-class schema LABEL_EQUIVALENCE is empty and merged == raw; the
+    # historical warning is no longer applicable. Kept the field for log
+    # consumers that expect a `warnings` list.
 
     gate_msg, gate_passed = _gate_message(
         metrics["merged_accuracy"], metrics["macro_f1"]

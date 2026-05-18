@@ -1,4 +1,4 @@
-"""Logistic Regression and RBF SVM baselines for the 28-class gesture task.
+"""Logistic Regression and RBF SVM baselines for the 26-class gesture task.
 
 Stage 3 of the gesture recognition pipeline. Trains and evaluates two classical
 ML baselines on the Stage 2 splits, appends one row per model to
@@ -87,7 +87,7 @@ SVM_MODEL_PATH_DEFAULT = RUNS_DIR_DEFAULT / "baseline_svm.joblib"
 LABELS_JSON_DEFAULT = Path("data/labels.json")
 
 EXPECTED_FEATURE_DIM = 279
-EXPECTED_NUM_CLASSES = 28
+EXPECTED_NUM_CLASSES = 26
 
 SVM_DEFAULT_SUBSAMPLE = 30_000
 SVM_DEFAULT_REFIT_SUBSAMPLE = 60_000
@@ -96,18 +96,19 @@ SVM_DEFAULT_CV = 5
 
 ACCEPTANCE_GATE_ACCURACY = 0.85
 
-# HaGRID dual-labels the same hand shape under two class IDs:
-#   - "peace" (8) == "count_2" (11): two fingers extended
-#   - "open_palm" (9) == "count_5" (14): five fingers extended
-# A pure-shape classifier cannot disambiguate these (see gesture_recognition_plan_v2.md
-# §1.3 — counting "2" *is* the peace sign). Raw accuracy is bounded near 0.81 by
-# this 50/50 split. We report merged_accuracy / merged_macro_f1 as supplementary
-# metrics where the equivalence classes are collapsed.
-LABEL_EQUIVALENCE: dict[int, int] = {8: 8, 11: 8, 9: 9, 14: 9}
+# Historically the 28-class schema dual-labelled the same hand shape under two
+# class IDs (peace==count_2, open_palm==count_5) because hagrid_extractor.py
+# emitted two project rows per HaGRID peace/two_up/palm image. The schema-level
+# fix removed count_2 and count_5 (see tasks/peace_count2_collision_fix.md), so
+# this equivalence map is now empty and `_merge_labels` is the identity.
+# Keeping the symbols exported preserves the metric-reporting columns
+# ("merged_accuracy", "merged_macro_f1") in runs/baselines.csv without forcing
+# downstream readers to branch.
+LABEL_EQUIVALENCE: dict[int, int] = {}
 
 
 def _merge_labels(y: np.ndarray) -> np.ndarray:
-    """Apply LABEL_EQUIVALENCE to collapse HaGRID's dual-labelled gesture classes."""
+    """Identity in the 26-class schema; historical kept for log-column stability."""
     out = y.astype(np.int32, copy=True)
     for src, dst in LABEL_EQUIVALENCE.items():
         if src != dst:
@@ -393,9 +394,9 @@ def evaluate_classifier(
 ) -> dict:
     """Return accuracy, macro F1, weighted F1, and predict wall time.
 
-    Also returns ``merged_accuracy`` and ``merged_macro_f1`` computed under
-    ``LABEL_EQUIVALENCE`` to account for HaGRID's dual-labelling of
-    peace==count_2 and open_palm==count_5.
+    Also returns ``merged_accuracy`` and ``merged_macro_f1`` for backwards
+    compatibility with the 28-class era; in the 26-class schema
+    ``LABEL_EQUIVALENCE`` is empty so merged == raw.
     """
     check_is_fitted(model)
     t0 = time.perf_counter()

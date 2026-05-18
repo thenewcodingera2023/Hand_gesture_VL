@@ -24,6 +24,7 @@ from src.inference import (
     load_inference_artifacts,
     predict_probs,
 )
+from src.models.mlp import NUM_CLASSES
 from src.preprocessor import TWO_HAND_DIM
 
 
@@ -53,11 +54,11 @@ def test_load_artifacts_real_checkpoint():
         pytest.skip(f"checkpoint not present at {DEFAULT_CHECKPOINT}")
     artifacts = load_inference_artifacts()
     assert artifacts.model.input_dim == 279
-    assert artifacts.model.num_classes == 28
+    assert artifacts.model.num_classes == NUM_CLASSES
     assert artifacts.scaler_mean.shape == (279,)
     assert artifacts.scaler_scale.shape == (279,)
     assert np.all(artifacts.scaler_scale > 0)
-    assert set(artifacts.id_to_label.keys()) == set(range(28))
+    assert set(artifacts.id_to_label.keys()) == set(range(NUM_CLASSES))
 
     with open(DEFAULT_LABELS, "r", encoding="utf-8") as f:
         name_to_id = json.load(f)
@@ -68,8 +69,8 @@ def test_inverse_label_mapping_complete():
     with open(DEFAULT_LABELS, "r", encoding="utf-8") as f:
         name_to_id = json.load(f)
     inverse = {int(v): k for k, v in name_to_id.items()}
-    assert len(inverse) == 28
-    assert set(inverse.keys()) == set(range(28))
+    assert len(inverse) == NUM_CLASSES
+    assert set(inverse.keys()) == set(range(NUM_CLASSES))
 
 
 def test_build_feature_vector_empty_hands():
@@ -150,7 +151,7 @@ def test_predict_probs_shape_and_sum():
     probs = predict_probs(
         artifacts.model, feat, artifacts.scaler_mean, artifacts.scaler_scale, artifacts.device
     )
-    assert probs.shape == (28,)
+    assert probs.shape == (NUM_CLASSES,)
     assert probs.dtype == np.float32
     assert abs(float(probs.sum()) - 1.0) < 1e-5
     assert np.all(probs >= 0.0) and np.all(probs <= 1.0)
@@ -177,7 +178,7 @@ def test_model_forward_eval_batch_one():
     artifacts.model.eval()
     with torch.no_grad():
         out = artifacts.model(torch.randn(1, 279))
-    assert out.shape == (1, 28)
+    assert out.shape == (1, NUM_CLASSES)
     assert torch.isfinite(out).all()
 
 

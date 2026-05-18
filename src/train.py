@@ -14,8 +14,8 @@ Authoritative spec:
 
 Re-uses helpers from ``src.models.baseline``:
     - ``DEFAULT_SEED`` (also in ``src.dataset``)
-    - ``LABEL_EQUIVALENCE`` and ``_merge_labels`` for the merged-accuracy
-      reporting required by Stage 4's pass criterion
+    - ``LABEL_EQUIVALENCE`` and ``_merge_labels`` (now an empty map / identity in
+      the 26-class schema; retained for log-column stability)
     - ``load_split`` + ``validate_split_schema`` for IO and schema checks
     - ``load_label_ids`` for the integer-to-name map saved in the checkpoint
 
@@ -61,7 +61,14 @@ from src.models.baseline import (
     load_split,
     validate_split_schema,
 )
-from src.models.mlp import DROPOUTS, HIDDEN_DIMS, INPUT_DIM, NUM_CLASSES, GestureMLP
+from src.models.mlp import (
+    DROPOUTS,
+    HIDDEN_DIMS,
+    INPUT_DIM,
+    NUM_CLASSES,
+    GestureMLP,
+    assert_labels_consistent,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -586,6 +593,10 @@ def train(args: argparse.Namespace) -> dict:
     """Full training run. Returns a dict of final metrics + paths."""
     seed = int(args.seed)
     set_global_seeds(seed)
+
+    # Reject inconsistent schemas up front so we don't burn an hour of training
+    # only to fail at checkpoint-load time.
+    assert_labels_consistent(LABELS_JSON_DEFAULT)
 
     device = pick_device(args.device)
     print(f"[train] device={device}", flush=True)

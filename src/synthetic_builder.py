@@ -37,16 +37,16 @@ from src.preprocessor import (
 
 COUNT_COMPOSITION: dict[str, tuple[str, str]] = {
     "count_6":  ("open_palm", "count_1"),
-    "count_7":  ("open_palm", "count_2"),
+    "count_7":  ("open_palm", "peace"),
     "count_8":  ("open_palm", "count_3"),
     "count_9":  ("open_palm", "count_4"),
     "count_10": ("open_palm", "open_palm"),
     "count_11": ("count_1",   "open_palm"),
-    "count_12": ("count_2",   "open_palm"),
+    "count_12": ("peace",     "open_palm"),
     "count_13": ("count_3",   "open_palm"),
     "count_14": ("count_4",   "open_palm"),
     "count_15": ("count_1",   "count_1"),
-    "count_16": ("count_2",   "count_1"),
+    "count_16": ("peace",     "count_1"),
     "count_17": ("count_3",   "count_1"),
     "count_18": ("count_4",   "count_1"),
 }
@@ -187,7 +187,7 @@ def save_single_hand_features(features: dict, out_path: Path) -> None:
 
 def assemble_single_hand_dataset(features: dict) -> dict:
     """For each per-hand sample, produce a (279,) vector with the left slot
-    zeroed and `right_present=1.0`. Used for control + count_1..count_5."""
+    zeroed and `right_present=1.0`. Used for control + count_1/count_3/count_4."""
     n = features["X"].shape[0]
     X = np.zeros((n, TWO_HAND_DIM), dtype=np.float32)
     X[:, RIGHT_FEAT_SLICE] = features["X"]

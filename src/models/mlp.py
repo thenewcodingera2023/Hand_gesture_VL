@@ -1,4 +1,4 @@
-"""MLP classifier: R^279 -> R^28 with BatchNorm, ReLU, Dropout, Kaiming init.
+"""MLP classifier: R^279 -> R^26 with BatchNorm, ReLU, Dropout, Kaiming init.
 
 Stage 4 main model. Pure ``nn.Module`` definition — no IO, no training, no
 device handling. The training loop lives in ``src/train.py``.
@@ -8,7 +8,7 @@ Architecture (gesture_recognition_plan_v2.md §6.2, stage4_handoff.md §5):
     Linear(279, 256) -> BatchNorm1d -> ReLU -> Dropout(0.3)
     Linear(256, 128) -> BatchNorm1d -> ReLU -> Dropout(0.3)
     Linear(128,  64) -> BatchNorm1d -> ReLU -> Dropout(0.2)
-    Linear( 64,  28)                                            # logits
+    Linear( 64,  26)                                            # logits
 
 ``forward`` returns logits. ``nn.CrossEntropyLoss`` consumes them directly
 (numerically stable); Stage 5 inference applies ``F.softmax`` at the boundary.
@@ -19,6 +19,9 @@ chain-rule visualization plan — see stage4_handoff.md §7.6.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -28,7 +31,7 @@ import torch.nn.functional as F
 # ---------------------------------------------------------------------------
 
 INPUT_DIM = 279
-NUM_CLASSES = 28
+NUM_CLASSES = 26
 HIDDEN_DIMS: tuple[int, int, int] = (256, 128, 64)
 DROPOUTS: tuple[float, float, float] = (0.3, 0.3, 0.2)
 
@@ -48,7 +51,7 @@ class GestureMLP(nn.Module):
         Linear(hidden_dims[1], hidden_dims[2]) -> BN -> ReLU -> Dropout(dropouts[2])
         Linear(hidden_dims[2], num_classes)                                  # logits
 
-    Defaults match plan §6.2 exactly: 279 -> 256 -> 128 -> 64 -> 28 with
+    Defaults match plan §6.2 exactly: 279 -> 256 -> 128 -> 64 -> 26 with
     dropout probabilities ``(0.3, 0.3, 0.2)``.
     """
 
@@ -123,8 +126,43 @@ class GestureMLP(nn.Module):
         """The four ``nn.Linear`` modules in forward order.
 
         ``linear_layers[0]`` is ``Linear(279, 256)``; ``linear_layers[3]`` is
-        ``Linear(64, 28)`` (output). Used by ``src/train.py`` to compute
+        ``Linear(64, 26)`` (output). Used by ``src/train.py`` to compute
         per-layer Frobenius weight norms for the training log, and by
         Stage 6's manual chain-rule trace.
         """
         return list(self.linears)
+
+
+# ---------------------------------------------------------------------------
+# Label schema guard
+# ---------------------------------------------------------------------------
+
+
+def assert_labels_consistent(
+    labels_json_path: Path = Path("data/labels.json"),
+    expected_num_classes: int = NUM_CLASSES,
+) -> dict[str, int]:
+    """Validate that ``data/labels.json`` matches ``NUM_CLASSES``.
+
+    Returns the loaded ``{name: id}`` mapping. Raises ``ValueError`` if the
+    file is missing, has the wrong number of classes, or has non-dense ids.
+    """
+    p = Path(labels_json_path)
+    if not p.is_file():
+        raise ValueError(f"labels.json not found at {p}")
+    with p.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+    if not isinstance(raw, dict) or not raw:
+        raise ValueError(f"labels.json must be a non-empty object; got {type(raw).__name__}")
+    name_to_id = {str(k): int(v) for k, v in raw.items()}
+    if len(name_to_id) != expected_num_classes:
+        raise ValueError(
+            f"labels.json has {len(name_to_id)} entries but NUM_CLASSES={expected_num_classes}. "
+            f"Edit data/labels.json or src/models/mlp.py::NUM_CLASSES so they agree."
+        )
+    ids = set(name_to_id.values())
+    if ids != set(range(expected_num_classes)):
+        raise ValueError(
+            f"labels.json ids must be a dense range 0..{expected_num_classes - 1}; got {sorted(ids)}"
+        )
+    return name_to_id

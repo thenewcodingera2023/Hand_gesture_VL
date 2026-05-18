@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/thenewcodingera2023/Hand_gesture_VL/actions/workflows/ci.yml/badge.svg)
 
-A 28-class hand gesture classifier built on MediaPipe hand landmarks, engineered into a 279-dimensional feature vector, and read by a 3-hidden-layer PyTorch MLP `R^279 -> R^28`. The system runs in real time on a laptop webcam and doubles as a teaching artefact: every step of training is a concrete instance of multivariable calculus (gradient, Jacobian, chain rule, level sets). The mathematical reading is in [MATH.md](MATH.md).
+A 26-class hand gesture classifier built on MediaPipe hand landmarks, engineered into a 279-dimensional feature vector, and read by a 3-hidden-layer PyTorch MLP `R^279 -> R^26`. The system runs in real time on a laptop webcam and doubles as a teaching artefact: every step of training is a concrete instance of multivariable calculus (gradient, Jacobian, chain rule, level sets). The mathematical reading is in [MATH.md](MATH.md).
 
 ## Repository Layout
 
@@ -26,7 +26,7 @@ Hand_gesture_VL/
 |-- tests/                      # pytest suite (see tests/README.md)
 |-- notebooks/                  # 01_data_exploration, 02_training_analysis, 03_mv_visualization
 |-- data/
-|   |-- labels.json             # 28-class integer label map
+|   |-- labels.json             # 26-class integer label map
 |   |-- hagrid_raw/             # downloaded HaGRIDv2 annotations
 |   |-- processed/              # Stage 1 .npz outputs
 |   `-- splits/                 # Stage 2 train/val/test .npz
@@ -209,31 +209,31 @@ Behavior:
 - 5 consecutive frames with no detected hand clears the smoother window and silences output.
 - The checkpoint's `scaler_mean` / `scaler_scale` are applied to every live feature vector so the live distribution matches training.
 
-**Manual demo for all 28 classes.** Hold gestures from `data/labels.json` in order:
+**Manual demo for all 26 classes.** Counts `count_2` and `count_5` were dropped because they are structurally identical to the single-hand `peace` and `open_palm` control gestures — see [tasks/peace_count2_collision_fix.md](tasks/peace_count2_collision_fix.md). Hold gestures from `data/labels.json` in order:
 
-| Count | Right hand | Left hand |
-|---|---|---|
-| 0 (=fist) | fist | absent |
-| 1 | one | absent |
-| 2 | peace | absent |
-| 3 | three | absent |
-| 4 | four | absent |
-| 5 | open_palm | absent |
-| 6 | open_palm | one |
-| 7 | open_palm | peace |
-| 8 | open_palm | three |
-| 9 | open_palm | four |
-| 10 | open_palm | open_palm |
-| 11 | one | open_palm |
-| 12 | peace | open_palm |
-| 13 | three | open_palm |
-| 14 | four | open_palm |
-| 15 | one | one |
-| 16 | peace | one |
-| 17 | three | one |
-| 18 | four | one |
+| Count | Right hand | Left hand | Class to display |
+|---|---|---|---|
+| 0 (=fist) | fist | absent | `fist` |
+| 1 | one | absent | `count_1` |
+| 2 (=peace) | peace | absent | `peace` |
+| 3 | three | absent | `count_3` |
+| 4 | four | absent | `count_4` |
+| 5 (=open_palm) | open_palm | absent | `open_palm` |
+| 6 | open_palm | one | `count_6` |
+| 7 | open_palm | peace | `count_7` |
+| 8 | open_palm | three | `count_8` |
+| 9 | open_palm | four | `count_9` |
+| 10 | open_palm | open_palm | `count_10` |
+| 11 | one | open_palm | `count_11` |
+| 12 | peace | open_palm | `count_12` |
+| 13 | three | open_palm | `count_13` |
+| 14 | four | open_palm | `count_14` |
+| 15 | one | one | `count_15` |
+| 16 | peace | one | `count_16` |
+| 17 | three | one | `count_17` |
+| 18 | four | one | `count_18` |
 
-Cycle the 10 control gestures (`thumbs_up, thumbs_down, stop, ok, call, rock, mute, fist, peace, open_palm`) with one hand visible first; then the 18 counts.
+Cycle the 10 control gestures (`thumbs_up, thumbs_down, stop, ok, call, rock, mute, fist, peace, open_palm`) with one hand visible first; then the 13 two-hand counts.
 
 ## Stage 6 — Evaluation and MV Visualization
 
@@ -253,7 +253,7 @@ Stage 6 artefacts (all under `runs/evaluation/`):
 
 | File | Source | Purpose |
 |---|---|---|
-| `test_metrics.json` | `src/evaluate.py` | headline metrics + acceptance gates + per-class + 28×28 CM + latency |
+| `test_metrics.json` | `src/evaluate.py` | headline metrics + acceptance gates + per-class + 26×26 CM + latency |
 | `per_class_metrics.csv` | `src/evaluate.py` | 10-column per-class breakdown |
 | `confusion_matrix.png` / `confusion_matrix_normalized.png` | `src/evaluate.py` | raw + row-normalized matrices |
 | `predictions.csv` | `src/evaluate.py` | per-sample top-1 / top-2 |
@@ -283,24 +283,18 @@ python -m jupyter nbconvert --to notebook --execute notebooks/03_mv_visualizatio
 
 ## Results
 
-Reported from `runs/evaluation/test_metrics.json` (gate message `acceptance.gate_message`: *"GATE PASSED: merged_test_acc=0.9928 (>= 0.9: True); macro_f1=0.9011 (>= 0.88: True)"*).
+Headline numbers come from `runs/evaluation/test_metrics.json` after running `python -m src.evaluate`. The 26-class schema removes the historical `peace == count_2` / `open_palm == count_5` collision, so `raw_accuracy == merged_accuracy` and the raw number is the headline. See [tasks/peace_count2_collision_fix.md](tasks/peace_count2_collision_fix.md) for the migration history (the prior 28-class checkpoint sat at raw 0.82 / merged 0.99 because of the duplicate labels).
 
-| Metric | Value | Source key |
-|---|---|---|
-| Test accuracy (raw) | 0.8168 | `metrics.accuracy` |
-| Test accuracy (merged) | 0.9928 | `metrics.merged_accuracy` |
-| Macro F1 | 0.9011 | `metrics.macro_f1` |
-| Weighted F1 | 0.7580 | `metrics.weighted_f1` |
-| Merged macro F1 | 0.9959 | `metrics.merged_macro_f1` |
-| Single-sample latency (mean) | 0.354 ms | `latency.single_sample.mean_ms` |
-| Single-sample latency (p95) | 0.516 ms | `latency.single_sample.p95_ms` |
-| Batch latency (p95, batch 512) | 102.9 ms | `latency.batch.p95_ms` |
-| Chain-rule samples passed | 12 / 12 | `runs/evaluation/chain_rule_verification.csv` |
-| Chain-rule max \|error\| | ≈ 7.3e-11 | `chain_rule_verification.csv` `abs_error` column |
+| Metric | Source key |
+|---|---|
+| Test accuracy | `metrics.accuracy` |
+| Macro F1 | `metrics.macro_f1` |
+| Weighted F1 | `metrics.weighted_f1` |
+| Single-sample latency (mean / p95) | `latency.single_sample.mean_ms` / `p95_ms` |
+| Batch latency (mean / p95, batch 512) | `latency.batch.mean_ms` / `p95_ms` |
+| Chain-rule samples passed | `runs/evaluation/chain_rule_verification.csv` |
 
-The gap between raw and merged accuracy is real and is **not** a bug. HaGRIDv2 dual-labels two gesture pairs — `peace` ↔ `count_2` and `open_palm` ↔ `count_5` — so the raw metric penalises label-equivalent predictions; the merged metric collapses the pairs via `src/models/baseline.py:LABEL_EQUIVALENCE`. The Stage 6 acceptance gate is on merged accuracy, in line with `runs/evaluation/test_metrics.json:warnings`.
-
-Baselines for reference (`runs/baselines.csv`): Logistic Regression val accuracy 0.795, macro F1 0.857; RBF SVM (C=10) val accuracy 0.816, macro F1 0.873. The MLP improves macro F1 over SVM by ≈ 0.028.
+Baselines for reference live in `runs/baselines.csv`. After the schema fix, Logistic Regression hits val accuracy ≈ 0.99 and RBF SVM (best `C`) is comparable; the MLP wins on macro F1.
 
 Results depend on the HaGRIDv2 subset used to train this checkpoint, the seed (`20260514`), and — for real-time inference — local webcam conditions. Reproducing on a different machine or seed may shift numbers slightly.
 
@@ -309,7 +303,7 @@ Results depend on the HaGRIDv2 subset used to train this checkpoint, the seed (`
 - **`ImportError: mediapipe`** — `pip install -r requirements.txt` again; some platforms need an older Python (3.10 or 3.11) for the MediaPipe wheel.
 - **`smoke_test_mediapipe.py` fails to load `hand_landmarker.task`** — re-download the file from the MediaPipe model card; do not commit a corrupted local copy.
 - **`runs/baselines.csv` missing when running `src/train.py`** — Stage 4 refuses to start without both baseline rows; run `python -m src.models.baseline train-all` first.
-- **Stage 5 shows `---` constantly** — low light or hand too far from camera causes MediaPipe to drop detections, or the gesture isn't one of the 28 trained classes. Both manifest as confidence < 0.75.
+- **Stage 5 shows `---` constantly** — low light or hand too far from camera causes MediaPipe to drop detections, or the gesture isn't one of the 26 trained classes. Both manifest as confidence < 0.75.
 - **Stage 5 mislabels two-hand counts** — hold both hands clearly separated; partial occlusion flips MediaPipe handedness and the feature assembler will populate the wrong slot.
 - **Slow tests fail** — `tests/test_dataset.py` and `tests/test_mv_visualization.py` have `@pytest.mark.slow` tests that touch `data/splits/` and `runs/mlp_best.pt`; skip them on a clean checkout with `pytest -q -k "not slow"`.
 

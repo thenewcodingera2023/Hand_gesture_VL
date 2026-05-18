@@ -22,7 +22,11 @@ HAGRID_RELEVANT = (
 )
 
 # Source label -> tuple of project class names this sample contributes to.
-# `palm` and `peace`/`two_up` map to two project classes (control + count alias).
+# The 28-class schema previously emitted two project rows per peace/two_up/palm
+# image (peace+count_2, palm+open_palm+count_5), causing the model to split its
+# probability across visually-identical labels — see
+# tasks/peace_count2_collision_fix.md. Each HaGRID image now emits exactly one
+# project row. `peace`/`two_up` both map to `peace` (same hand shape).
 LABEL_MAP: dict[str, tuple[str, ...]] = {
     "like":    ("thumbs_up",),
     "dislike": ("thumbs_down",),
@@ -32,9 +36,9 @@ LABEL_MAP: dict[str, tuple[str, ...]] = {
     "rock":    ("rock",),
     "mute":    ("mute",),
     "fist":    ("fist",),
-    "peace":   ("peace", "count_2"),
-    "two_up":  ("peace", "count_2"),
-    "palm":    ("open_palm", "count_5"),
+    "peace":   ("peace",),
+    "two_up":  ("peace",),
+    "palm":    ("open_palm",),
     "one":     ("count_1",),
     "three":   ("count_3",),
     "four":    ("count_4",),

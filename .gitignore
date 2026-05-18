@@ -53,9 +53,10 @@ documentation/
 # Datasets and pipeline outputs (reproducible from src/ + HaGRIDv2 download)
 data/hagrid_raw/
 data/processed/
+data/processed_v28/
 data/splits/
+data/splits_v28/
 runs/
-evaluation/
 
 # Model weights / checkpoints (large; reproducible or downloadable)
 *.pt
@@ -73,3 +74,4 @@ evaluation/
 .gitignore
 .gitignore_backup
 CLAUDE.md
+web/

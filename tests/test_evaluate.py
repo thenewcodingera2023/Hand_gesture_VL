@@ -62,15 +62,13 @@ def _build_checkpoint_at(path: Path, seed: int = 0) -> dict:
         "dropouts": list(DROPOUTS),
         "num_classes": NUM_CLASSES,
     }
-    labels = {
-        0: "thumbs_up", 1: "thumbs_down", 2: "stop", 3: "ok", 4: "call",
-        5: "rock", 6: "mute", 7: "fist", 8: "peace", 9: "open_palm",
-        10: "count_1", 11: "count_2", 12: "count_3", 13: "count_4", 14: "count_5",
-        15: "count_6", 16: "count_7", 17: "count_8", 18: "count_9",
-        19: "count_10", 20: "count_11", 21: "count_12", 22: "count_13",
-        23: "count_14", 24: "count_15", 25: "count_16", 26: "count_17",
-        27: "count_18",
-    }
+    # Derive the {id: name} map from the canonical data/labels.json so any
+    # schema change (e.g. the 28-class -> 26-class collision fix) flows through.
+    with open(Path("data/labels.json"), "r", encoding="utf-8") as f:
+        labels = {int(v): str(k) for k, v in json.load(f).items()}
+    assert len(labels) == NUM_CLASSES, (
+        f"labels.json has {len(labels)} entries; NUM_CLASSES={NUM_CLASSES}"
+    )
     train_mod.save_checkpoint(
         path=path, model=model, optimizer=opt, scheduler=sched, scaler=scaler,
         epoch=42,
@@ -146,7 +144,7 @@ def test_load_model_checkpoint_returns_eval_model(synthetic_checkpoint):
     assert scaler.scale_.shape == (INPUT_DIM,)
     assert set(label_map.keys()) == set(range(NUM_CLASSES))
     assert label_map[8] == "peace"
-    assert label_map[11] == "count_2"
+    assert label_map[9] == "open_palm"
     assert ck["epoch"] == 42
 
 
@@ -237,7 +235,7 @@ def test_compute_classification_metrics_perfect():
 
 def test_per_class_metrics_cover_all_labels_and_handle_zero_support():
     rng = np.random.default_rng(0)
-    # Class 27 has no test samples; class 0 has many.
+    # Last class (NUM_CLASSES - 1) has no test samples; class 0 has many.
     y_true = np.concatenate([
         np.zeros(40, dtype=np.int64),
         rng.integers(1, NUM_CLASSES - 1, size=40).astype(np.int64),
@@ -246,8 +244,9 @@ def test_per_class_metrics_cover_all_labels_and_handle_zero_support():
     m = ev.compute_classification_metrics(y_true, y_pred, list(range(NUM_CLASSES)))
     assert len(m["per_class_accuracy"]) == NUM_CLASSES
     assert len(m["per_class_support"]) == NUM_CLASSES
-    assert m["per_class_support"][27] == 0
-    assert m["per_class_accuracy"][27] is None
+    last = NUM_CLASSES - 1
+    assert m["per_class_support"][last] == 0
+    assert m["per_class_accuracy"][last] is None
 
 
 def test_confusion_matrix_shape_and_labels_order():
@@ -362,10 +361,12 @@ def test_label_mapping_matches_labels_json(synthetic_checkpoint):
         synthetic_checkpoint, labels_path=Path("data/labels.json"),
         device=torch.device("cpu"),
     )
+    # peace and open_palm are the canonical 1:1 labels after the 26-class
+    # collision fix (count_2 / count_5 no longer exist as separate ids).
     assert label_map[8] == "peace"
-    assert label_map[11] == "count_2"
     assert label_map[9] == "open_palm"
-    assert label_map[14] == "count_5"
+    assert "count_2" not in label_map.values()
+    assert "count_5" not in label_map.values()
 
 
 # ---------------------------------------------------------------------------

@@ -36,7 +36,7 @@ import numpy as np
 import torch
 
 from src.feature_assembler import assemble_from_hands
-from src.models.mlp import GestureMLP
+from src.models.mlp import INPUT_DIM, NUM_CLASSES, GestureMLP
 from src.preprocessor import BONE_PAIRS, TWO_HAND_DIM
 from src.smoother import Smoother
 
@@ -46,8 +46,8 @@ DEFAULT_LABELS = REPO_ROOT / "data" / "labels.json"
 
 EXPECTED_HIDDEN_DIMS: tuple[int, int, int] = (256, 128, 64)
 EXPECTED_DROPOUTS: tuple[float, float, float] = (0.3, 0.3, 0.2)
-EXPECTED_INPUT_DIM = 279
-EXPECTED_NUM_CLASSES = 28
+EXPECTED_INPUT_DIM = INPUT_DIM
+EXPECTED_NUM_CLASSES = NUM_CLASSES
 
 WINDOW_TITLE = "Gesture Inference"
 
